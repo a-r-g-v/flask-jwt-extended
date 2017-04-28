@@ -11,7 +11,7 @@ from flask_jwt_extended.blacklist import check_if_token_revoked
 from flask_jwt_extended.config import config
 from flask_jwt_extended.exceptions import (
     InvalidHeaderError, NoAuthorizationError, WrongTokenError,
-    FreshTokenRequired, CSRFError
+    FreshTokenRequired, CSRFError, JWTExtendedException
 )
 from flask_jwt_extended.tokens import decode_jwt
 
@@ -35,6 +35,23 @@ def jwt_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
+def jwt_optioanl(fn):
+    """
+    TODO
+
+    :param fn: The view function to decorate
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            # Save the jwt in the context so that it can be accessed later by
+            # the various endpoints that is using this decorator
+            jwt_data = _decode_jwt_from_request(request_type='access')
+            ctx_stack.top.jwt = jwt_data
+        except JWTExtendedException:
+            pass
+        return fn(*args, **kwargs)
+    return wrapper
 
 def fresh_jwt_required(fn):
     """
@@ -73,6 +90,7 @@ def jwt_refresh_token_required(fn):
         ctx_stack.top.jwt = jwt_data
         return fn(*args, **kwargs)
     return wrapper
+
 
 
 def _decode_jwt_from_headers():
